@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Credit Price Calculator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#eef1f0; --surface:#ffffff; --surface-2:#f7f9f8; --surface-3:#eaefed;
+  --ink:#141a1c; --ink-2:#3d4a4e; --muted:#6b7a7e;
+  --line:#d8dfdd; --line-soft:#e7ecea;
+  --accent:#1c5b6b; --accent-2:#2e7f93;
+  --loss:#a33228; --loss-bg:#f8e7e4;
+  --thin:#8d6410; --thin-bg:#faf0dc;
+  --ok:#356e46; --ok-bg:#e4f0e6;
+  --track:#dfe5e3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d1213; --surface:#151d1f; --surface-2:#1b2426; --surface-3:#202b2d;
+    --ink:#e7edec; --ink-2:#b3c1c1; --muted:#849698;
+    --line:#2a3639; --line-soft:#212c2e;
+    --accent:#63b4c6; --accent-2:#7fc9d9;
+    --loss:#e58175; --loss-bg:#3a1e1a;
+    --thin:#d9a94a; --thin-bg:#33270f;
+    --ok:#77bf8c; --ok-bg:#17301e;
+    --track:#2c3a3d;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1213; --surface:#151d1f; --surface-2:#1b2426; --surface-3:#202b2d;
+  --ink:#e7edec; --ink-2:#b3c1c1; --muted:#849698;
+  --line:#2a3639; --line-soft:#212c2e;
+  --accent:#63b4c6; --accent-2:#7fc9d9;
+  --loss:#e58175; --loss-bg:#3a1e1a;
+  --thin:#d9a94a; --thin-bg:#33270f;
+  --ok:#77bf8c; --ok-bg:#17301e;
+  --track:#2c3a3d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+h1{font-family:Spectral,Georgia,serif;font-size:clamp(1.9rem,4vw,2.6rem);font-weight:700;
+  letter-spacing:-.02em;margin:0;line-height:1.1;text-wrap:balance}
+h2{font-family:Spectral,Georgia,serif;font-size:1.3rem;font-weight:600;margin:0}
+p{margin:0}
+.mono,input[type=number]{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+
+header{padding:44px 0 26px}
+header p.sub{margin-top:14px;max-width:62ch;color:var(--ink-2)}
+
+/* controls */
+.toolbar{position:sticky;top:0;z-index:20;background:var(--ground);
+  padding:14px 0 12px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.toolrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:.82rem;
+  padding:7px 13px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff;font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent-2);outline-offset:-2px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.82rem;
+  padding:7px 13px;border-radius:3px;cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn:focus-visible{outline:2px solid var(--accent-2);outline-offset:1px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.spacer{flex:1 1 auto}
+label.tgt{display:inline-flex;align-items:center;gap:7px;font-size:.82rem;color:var(--ink-2)}
+label.tgt input{width:62px;padding:6px 8px;border:1px solid var(--line);border-radius:3px;
+  background:var(--surface);color:var(--ink);font-size:.82rem}
+
+/* summary */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);margin:22px 0 30px}
+.sum{background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:3px}
+.sum .k{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.sum .v{font-family:"IBM Plex Mono",monospace;font-size:1.7rem;font-weight:500;letter-spacing:-.02em;line-height:1.1}
+.sum .d{font-size:.75rem;color:var(--muted)}
+.sum .rate{font-family:"IBM Plex Mono",monospace;font-size:.78rem;color:var(--muted)}
+
+/* rows */
+.list{display:flex;flex-direction:column;gap:10px}
+.row{background:var(--surface);border:1px solid var(--line);padding:16px 18px;
+  display:grid;gap:14px 18px;grid-template-columns:minmax(190px,1.5fr) minmax(240px,2fr) minmax(230px,1.3fr);
+  align-items:start}
+.row.dim{opacity:.62}
+.nm{display:flex;flex-direction:column;gap:3px;min-width:0}
+.nm b{font-weight:600;font-size:.95rem}
+.nm .meta{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--muted);
+  word-break:break-all;line-height:1.45}
+.chip{display:inline-block;padding:1px 7px;border-radius:2px;font-size:.65rem;font-weight:600;
+  letter-spacing:.05em;text-transform:uppercase;margin-right:5px}
+.c-image{background:var(--surface-3);color:var(--ink-2)}
+.c-video{background:var(--thin-bg);color:var(--thin)}
+
+.ctrl{display:flex;flex-direction:column;gap:7px;min-width:0}
+.ctrl .top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.ctrl .top input[type=number]{width:88px;padding:5px 8px;border:1px solid var(--line);border-radius:3px;
+  background:var(--surface-2);color:var(--ink);font-size:.95rem;font-weight:600}
+.ctrl .was{font-size:.75rem;color:var(--muted)}
+.delta{font-family:"IBM Plex Mono",monospace;font-size:.75rem;font-weight:600}
+.delta.up{color:var(--ok)} .delta.down{color:var(--loss)}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;background:transparent;margin:0;cursor:pointer}
+input[type=range]:focus-visible{outline:2px solid var(--accent-2);outline-offset:4px}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:var(--track)}
+input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:var(--track)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--surface);margin-top:-6px;
+  box-shadow:0 0 0 1px var(--accent)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);
+  border:2px solid var(--surface);box-shadow:0 0 0 1px var(--accent)}
+.ticks{position:relative;height:15px;margin-top:-3px}
+.tick{position:absolute;top:0;transform:translateX(-50%);font-family:"IBM Plex Mono",monospace;
+  font-size:.62rem;color:var(--muted);white-space:nowrap}
+.tick::before{content:"";position:absolute;left:50%;top:-6px;width:1px;height:5px;background:var(--line);
+  transform:translateX(-50%)}
+
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line)}
+.pc{background:var(--surface-2);padding:8px 9px;display:flex;flex-direction:column;gap:1px;text-align:right}
+.pc .pn{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pc .pm{font-family:"IBM Plex Mono",monospace;font-size:1.02rem;font-weight:600;line-height:1.2}
+.pc .pd{font-family:"IBM Plex Mono",monospace;font-size:.66rem;color:var(--muted)}
+.pm.lo{color:var(--loss)} .pm.mid{color:var(--thin)} .pm.hi{color:var(--ok)}
+
+.note{background:var(--surface-2);border-left:2px solid var(--accent);padding:14px 18px;
+  font-size:.86rem;color:var(--ink-2);display:flex;flex-direction:column;gap:8px;margin:26px 0}
+.note b{color:var(--ink)}
+.unk{font-size:.8rem;color:var(--muted);font-style:italic}
+#out{width:100%;min-height:150px;margin-top:12px;padding:12px;border:1px solid var(--line);
+  border-radius:3px;background:var(--surface-2);color:var(--ink);
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;display:none}
+footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-size:.78rem;color:var(--muted)}
+@media (max-width:900px){ .row{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <p class="eyebrow">Live pricing tool</p>
+  <h1>Credit price calculator</h1>
+  <p class="sub">Drag a widget's price and watch the gross margin move on all three plans at once. Costs are the live fal rate for the endpoint each widget actually calls. Your edits are saved in this browser.</p>
+</header>
+
+<div class="toolbar">
+  <div class="toolrow">
+    <div class="seg" role="group" aria-label="Filter by mode">
+      <button data-filter="all" aria-pressed="true">All</button>
+      <button data-filter="image" aria-pressed="false">Image</button>
+      <button data-filter="video" aria-pressed="false">Video</button>
+      <button data-filter="neg" aria-pressed="false">Negative on Monthly</button>
+    </div>
+    <div class="seg" role="group" aria-label="Sort">
+      <button data-sort="margin" aria-pressed="true">Worst first</button>
+      <button data-sort="name" aria-pressed="false">A&ndash;Z</button>
+      <button data-sort="cost" aria-pressed="false">Priciest model</button>
+    </div>
+    <span class="spacer"></span>
+    <label class="tgt">Target Monthly margin
+      <input id="tgt" type="number" min="-100" max="99" step="1" value="20"> %
+    </label>
+    <button class="btn primary" id="applyAll">Apply to all</button>
+    <button class="btn" id="reset">Reset</button>
+    <button class="btn" id="copy">Copy changes</button>
+  </div>
+</div>
+
+<div class="summary" id="summary"></div>
+<div class="list" id="list"></div>
+<textarea id="out" readonly aria-label="Changed prices"></textarea>
+
+<div class="note">
+  <p><b>Margin is gross margin on revenue</b> &mdash; (revenue &minus; fal cost) / revenue, per generation. The three plans grant credits at different prices, so one credit price produces three different margins: 12 Month $0.000521/cr, Monthly $0.001874/cr, Weekly $0.002995/cr.</p>
+  <p>The ticks under each slider mark where that plan crosses zero. A price left of a tick loses money on that plan.</p>
+</div>
+
+<footer>
+  Costs read from the live fal catalog and model pages on 1 September 2026; credit prices from the production persona endpoint. Plans: 12 Month $49.99/yr &amp; 8,000 cr/mo &middot; Monthly $14.99/mo &amp; 8,000 cr/mo &middot; Weekly $5.99/wk &amp; 2,000 cr/wk.
+</footer>
+</div>
+
+<script>
+const DATA = [{"slug":"ai-style-analysis","title":"AI Style Analysis","persona":"ai-style-analysis","mode":"image","cr":25,"cost":0.211,"ep":"openai/gpt-image-2/edit","slots":4,"note":""},{"slug":"ai-family-photo-generator","title":"AI Family Photo Generator","persona":"ai-family-photo-generator","mode":"image","cr":75,"cost":0.211,"ep":"openai/gpt-image-2/edit","slots":1,"note":""},{"slug":"ai-couple-photo-maker","title":"AI Couple Photo Maker","persona":"ai-couple-photo-maker","mode":"image","cr":25,"cost":0.0675,"ep":"bytedance/seedream/v5/pro/edit","slots":1,"note":""},{"slug":"ai-passport-photo","title":"AI Passport Photo","persona":"ai-passport-photo-tti","mode":"image","cr":100,"cost":0.211,"ep":"openai/gpt-image-2/edit","slots":1,"note":""},{"slug":"ai-hug-generator","title":"AI Hug Generator","persona":"AI-Hug-Generator-image","mode":"image","cr":25,"cost":0.04,"ep":"fal-ai/bytedance/seedream/v4.5/edit","slots":2,"note":""},{"slug":"ai-add-person-to-photo","title":"Add Person to Photo","persona":"add-person-to-photo","mode":"image","cr":25,"cost":0.04,"ep":"fal-ai/bytedance/seedream/v4.5/edit","slots":1,"note":""},{"slug":"ai-pet-baby-generator","title":"AI Pet Baby Generator","persona":"ai-pet-baby-generator","mode":"image","cr":100,"cost":0.15,"ep":"fal-ai/nano-banana-pro/edit","slots":1,"note":""},{"slug":"ai-girl-generator","title":"AI Girl Generator","persona":"ai-girl-generator","mode":"image","cr":100,"cost":0.15,"ep":"fal-ai/nano-banana-pro/edit","slots":1,"note":""},{"slug":"ai-hair-color-changer","title":"AI Hair Color Changer","persona":"ai-hair-color-changer","mode":"image","cr":100,"cost":0.15,"ep":"fal-ai/nano-banana-pro/edit","slots":1,"note":""},{"slug":"ai-smile-generator","title":"AI Smile Generator","persona":"smile-generator","mode":"image","cr":15,"cost":0.022,"ep":"xai/grok-imagine-image/edit","slots":1,"note":""},{"slug":"ai-soulmate","title":"AI Soulmate","persona":"ai-soulmate","mode":"image","cr":15,"cost":0.022,"ep":"xai/grok-imagine-image/edit","slots":1,"note":""},{"slug":"ai-pet-portrait-generator","title":"AI Pet Portrait","persona":"ai-pet-portrait","mode":"image","cr":15,"cost":0.022,"ep":"xai/grok-imagine-image/edit","slots":1,"note":""},{"slug":"ai-image-combiner","title":"AI Image Combiner","persona":"combine-images","mode":"image","cr":30,"cost":0.04,"ep":"fal-ai/bytedance/seedream/v4.5/edit","slots":1,"note":""},{"slug":"ai-face-swap-video","title":"AI Face Swap Video","persona":"ai-face-swap-video","mode":"video","cr":760,"cost":0.84,"ep":"fal-ai/kling-video/o3/pro/video-to-video/reference","slots":1,"note":""},{"slug":"ai-cartoonizer","title":"AI Cartoonizer","persona":"ai-cartoonizer","mode":"image","cr":200,"cost":0.211,"ep":"openai/gpt-image-2","slots":1,"note":""},{"slug":"ai-handwriting-check","title":"AI Handwriting Check","persona":"ai-handwriting-check","mode":"image","cr":200,"cost":0.211,"ep":"openai/gpt-image-2","slots":1,"note":""},{"slug":"ai-palm-reading","title":"AI Palm Reading","persona":"ai-palm-reading","mode":"image","cr":200,"cost":0.211,"ep":"openai/gpt-image-2/edit","slots":1,"note":""},{"slug":"ai-oc-generator","title":"AI OC Generator","persona":"ai-oc-generator","mode":"image","cr":200,"cost":0.211,"ep":"openai/gpt-image-2","slots":1,"note":""},{"slug":"ai-gta-trend","title":"GTA Trend","persona":"gta-trend","mode":"image","cr":200,"cost":0.211,"ep":"openai/gpt-image-2","slots":1,"note":""},{"slug":"ai-hug-generator","title":"AI Hug Generator","persona":"AI-Hug-Generator","mode":"video","cr":400,"cost":0.4,"ep":"xai/grok-imagine-video/reference-to-video","slots":2,"note":""},{"slug":"change-text-in-image","title":"Change Text in Image","persona":"change-text-in-image","mode":"image","cr":150,"cost":0.15,"ep":"fal-ai/nano-banana-pro","slots":1,"note":""},{"slug":"looksmax","title":"Looksmax Face Scan","persona":"looksmax-after","mode":"image","cr":160,"cost":0.15,"ep":"fal-ai/nano-banana-pro","slots":1,"note":""},{"slug":"ai-selfie-generator","title":"AI Selfie Generator","persona":"ai-selfie-generator","mode":"image","cr":165,"cost":0.15,"ep":"fal-ai/nano-banana-pro/edit","slots":1,"note":""},{"slug":"ai-kissing-generator","title":"AI Kissing Generator","persona":"ai-kissing-image","mode":"image","cr":45,"cost":0.04,"ep":"fal-ai/bytedance/seedream/v4.5/edit","slots":2,"note":""},{"slug":"aspect-ratio-changer","title":"Aspect Ratio Changer","persona":"aspect-ratio-changer","mode":"image","cr":40,"cost":0.035,"ep":"bytedance/seedream/v5/lite/edit","slots":1,"note":""},{"slug":"ai-face-shape-detector","title":"AI Face Shape Detector","persona":"ai-face-shape-detector","mode":"image","cr":250,"cost":0.211,"ep":"openai/gpt-image-2/edit","slots":1,"note":""},{"slug":"ai-sims-2-trend","title":"Sims 2 Trend","persona":"sims-trend","mode":"image","cr":250,"cost":0.211,"ep":"openai/gpt-image-2","slots":1,"note":""},{"slug":"ai-baby-face-generator","title":"AI Baby Generator","persona":"baby-generator","mode":"image","cr":100,"cost":0.08,"ep":"fal-ai/nano-banana-2/edit","slots":1,"note":""},{"slug":"ai-attractiveness-test","title":"AI Attractiveness Test","persona":"ai-attractiveness-test","mode":"image","cr":300,"cost":0.211,"ep":"openai/gpt-image-2/edit","slots":1,"note":""},{"slug":"ai-kissing-generator","title":"AI Kissing Generator","persona":"ai-kissing-video","mode":"video","cr":600,"cost":0.4,"ep":"xai/grok-imagine-video/reference-to-video","slots":2,"note":""},{"slug":"ai-skin-analyzer","title":"AI Skin Analyzer","persona":"ai-skin-analyzer-tti","mode":"image","cr":350,"cost":0.211,"ep":"openai/gpt-image-2/edit","slots":1,"note":""},{"slug":"ai-rate-my-face","title":"AI Face Rater","persona":"ai-face-rater-tti","mode":"image","cr":300,"cost":0.08,"ep":"fal-ai/nano-banana-2/edit","slots":1,"note":""},{"slug":"ai-video-extender","title":"AI Video Extender","persona":"ai-video-extender","mode":"video","cr":500,"cost":0.08,"ep":"xai/grok-imagine-video/extend-video","slots":1,"note":""},{"slug":"ai-music-video-generator","title":"AI Music Video Generator","persona":"ai-music-video-singer","mode":"image","cr":4000,"cost":0.15,"ep":"fal-ai/nano-banana-pro/edit","slots":1,"note":""},{"slug":"ai-music-video-generator","title":"AI Music Video Generator","persona":"ai-music-video-singer-t2i","mode":"image","cr":4000,"cost":0.15,"ep":"fal-ai/nano-banana-pro","slots":1,"note":""},{"slug":"looksmax","title":"Looksmax Face Scan","persona":"gemini-pro-looksmax-app","mode":"image","cr":50,"cost":null,"ep":"","slots":1,"note":"non-fal (openrouter)"},{"slug":"ai-skin-analyzer","title":"AI Skin Analyzer","persona":"ai-skin-advisor-chat","mode":"image","cr":10,"cost":null,"ep":"","slots":1,"note":"non-fal (openrouter)"},{"slug":"ai-rate-my-face","title":"AI Face Rater","persona":"ai-face-rater-scan","mode":"image","cr":50,"cost":null,"ep":"","slots":1,"note":"non-fal (openai)"},{"slug":"ai-stadium-trend","title":"AI Stadium Video","persona":"ai-stadium-trend","mode":"video","cr":2000,"cost":null,"ep":null,"slots":1,"note":"fal workflow"},{"slug":"multiple-angles","title":"Multiple Angles","persona":"multiple-angles-widget","mode":"image","cr":40,"cost":null,"ep":"fal-ai/qwen-image-edit-2509-lora-gallery/multiple-angles","slots":1,"note":"no fal price"},{"slug":"ai-face-shape-detector","title":"AI Face Shape Detector","persona":"ai-face-shape-detector-chat","mode":"image","cr":10,"cost":null,"ep":"","slots":1,"note":"non-fal (openrouter)"},{"slug":"ai-dance-generator","title":"AI Dance Generator","persona":"ai-dance-generator","mode":"video","cr":1000,"cost":null,"ep":"fal-ai/kling-video/v3/pro/motion-control","slots":1,"note":"no fal price"},{"slug":"ai-music-video-generator","title":"AI Music Video Generator","persona":"ai-music-video-generator","mode":"video","cr":4000,"cost":null,"ep":"fal-ai/bytedance/omnihuman/v1.5","slots":1,"note":"no fal price"}];
+const PLANS = [
+  {key:'annual', name:'12 Month', rate:0.000520729167},
+  {key:'monthly', name:'Monthly',  rate:0.00187375},
+  {key:'weekly',  name:'Weekly',   rate:0.002995}
+];
+const LS = 'credit-calc-prices-v1';
+let prices = {};
+try { prices = JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { prices = {}; }
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(prices)); } catch (e) {} };
+
+const priced = DATA.filter(d => d.cost);
+const unpriced = DATA.filter(d => !d.cost);
+const key = d => d.slug + '::' + d.persona;
+const cur = d => (prices[key(d)] != null ? prices[key(d)] : d.cr);
+const maxFor = d => Math.max(50, Math.ceil(d.cost * 534 * 4 / 5) * 5, d.cr * 2);
+const marginPct = (cr, cost, rate) => { const rev = cr * rate; return rev > 0 ? (rev - cost) / rev * 100 : -Infinity; };
+const cls = p => p < 0 ? 'lo' : (p < 50 ? 'mid' : 'hi');
+const fmtM = m => Number.isFinite(m) ? (m >= 0 ? '+' : '') + m.toFixed(0) + '%' : 'no revenue';
+const fmt = n => n.toLocaleString('en-US');
+
+let filter = 'all', sort = 'margin';
+
+function rowHTML(d) {
+  const c = cur(d), mx = maxFor(d);
+  const ticks = PLANS.map(p => {
+    const be = d.cost / p.rate;
+    if (be > mx) return '';
+    return `<span class="tick" style="left:${Math.min(99, be / mx * 100)}%">${Math.round(be)}</span>`;
+  }).join('');
+  const cells = PLANS.map(p => {
+    const m = marginPct(c, d.cost, p.rate), rev = c * p.rate;
+    return `<div class="pc"><span class="pn">${p.name}</span>
+      <span class="pm ${cls(m)}" data-m="${p.key}">${fmtM(m)}</span>
+      <span class="pd" data-r="${p.key}">$${(rev - d.cost).toFixed(4)}</span></div>`;
+  }).join('');
+  const dlt = c - d.cr;
+  return `<div class="row" data-k="${key(d)}" data-mode="${d.mode}">
+    <div class="nm">
+      <b>${d.title}${d.slots > 1 ? ` <span style="color:var(--muted);font-weight:400">\u00d7${d.slots}</span>` : ''}</b>
+      <span class="meta"><span class="chip c-${d.mode}">${d.mode}</span>/${d.slug}</span>
+      <span class="meta">${d.persona} \u00b7 $${d.cost.toFixed(4)}/gen</span>
+    </div>
+    <div class="ctrl">
+      <div class="top">
+        <input type="number" min="0" max="${mx}" step="1" value="${c}" aria-label="Price in credits for ${d.title}">
+        <span class="was">credits &middot; now ${fmt(d.cr)}</span>
+        <span class="delta ${dlt > 0 ? 'up' : dlt < 0 ? 'down' : ''}" data-d>${dlt ? (dlt > 0 ? '+' : '') + fmt(dlt) : ''}</span>
+      </div>
+      <input type="range" min="0" max="${mx}" step="1" value="${c}" aria-label="Price slider for ${d.title}">
+      <div class="ticks">${ticks}</div>
+    </div>
+    <div class="plans">${cells}</div>
+  </div>`;
+}
+
+function repaintRow(el, d) {
+  const c = cur(d);
+  PLANS.forEach(p => {
+    const m = marginPct(c, d.cost, p.rate), rev = c * p.rate;
+    const s = el.querySelector(`[data-m="${p.key}"]`);
+    s.textContent = fmtM(m);
+    s.className = 'pm ' + cls(m);
+    el.querySelector(`[data-r="${p.key}"]`).textContent = '$' + (rev - d.cost).toFixed(4);
+  });
+  const dlt = c - d.cr, dEl = el.querySelector('[data-d]');
+  dEl.textContent = dlt ? (dlt > 0 ? '+' : '') + fmt(dlt) : '';
+  dEl.className = 'delta ' + (dlt > 0 ? 'up' : dlt < 0 ? 'down' : '');
+}
+
+function repaintSummary() {
+  const box = document.getElementById('summary');
+  const parts = PLANS.map(p => {
+    const ms = priced.map(d => marginPct(cur(d), d.cost, p.rate)).sort((a, b) => a - b);
+    const neg = ms.filter(m => m < 0).length;
+    const med = ms.length ? ms[Math.floor(ms.length / 2)] : 0;
+    return `<div class="sum"><span class="k">${p.name}</span>
+      <span class="v ${cls(med)}" style="color:var(--${med < 0 ? 'loss' : med < 50 ? 'thin' : 'ok'})">${(med >= 0 ? '+' : '') + med.toFixed(0)}%</span>
+      <span class="d">median margin \u00b7 ${neg} of ${priced.length} negative</span>
+      <span class="rate">$${p.rate.toFixed(6)} / credit</span></div>`;
+  }).join('');
+  const changed = priced.filter(d => cur(d) !== d.cr).length;
+  box.innerHTML = parts + `<div class="sum"><span class="k">Edited</span>
+    <span class="v">${changed}</span><span class="d">of ${priced.length} widgets</span>
+    <span class="rate">saved in this browser</span></div>`;
+}
+
+function visible() {
+  let list = priced.slice();
+  if (filter === 'image' || filter === 'video') list = list.filter(d => d.mode === filter);
+  if (filter === 'neg') list = list.filter(d => marginPct(cur(d), d.cost, 0.00187375) < 0);
+  if (sort === 'margin') list.sort((a, b) => marginPct(cur(a), a.cost, 0.00187375) - marginPct(cur(b), b.cost, 0.00187375));
+  if (sort === 'name') list.sort((a, b) => a.title.localeCompare(b.title));
+  if (sort === 'cost') list.sort((a, b) => b.cost - a.cost);
+  return list;
+}
+
+function render() {
+  const list = document.getElementById('list');
+  list.innerHTML = visible().map(rowHTML).join('') +
+    `<div class="row dim"><div class="nm"><b>Not priced &mdash; ${unpriced.length} widget personas</b>
+      <span class="unk">fal publishes no price for these endpoints, or they are fal workflows / non-fal models. A FAL_KEY and the billing endpoint would settle them.</span></div>
+     <div class="ctrl"><span class="meta">${unpriced.map(u => u.persona + ' (' + (u.cr || 0) + ' cr)').join(' \u00b7 ')}</span></div>
+     <div></div></div>`;
+  repaintSummary();
+}
+
+document.addEventListener('input', e => {
+  const row = e.target.closest('.row[data-k]');
+  if (!row) return;
+  const d = priced.find(x => key(x) === row.dataset.k);
+  if (!d) return;
+  const v = Math.max(0, Math.round(Number(e.target.value) || 0));
+  prices[key(d)] = v;
+  row.querySelectorAll('input').forEach(i => { if (i !== e.target) i.value = v; });
+  repaintRow(row, d);
+  repaintSummary();
+  save();
+});
+
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  const grp = b.parentElement;
+  grp.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  if (b.dataset.filter) filter = b.dataset.filter;
+  if (b.dataset.sort) sort = b.dataset.sort;
+  render();
+}));
+
+document.getElementById('applyAll').addEventListener('click', () => {
+  const t = Math.min(99, Number(document.getElementById('tgt').value) || 0) / 100;
+  priced.forEach(d => { prices[key(d)] = Math.max(1, Math.round(d.cost / (1 - t) / 0.00187375)); });
+  save(); render();
+});
+document.getElementById('reset').addEventListener('click', () => {
+  prices = {}; save(); render();
+  const o = document.getElementById('out'); o.style.display = 'none';
+});
+document.getElementById('copy').addEventListener('click', () => {
+  const changed = priced.filter(d => cur(d) !== d.cr);
+  const txt = changed.length
+    ? 'persona,widget,old_credits,new_credits,fal_cost,margin_12month,margin_monthly,margin_weekly\n' +
+      changed.map(d => [d.persona, d.slug, d.cr, cur(d), d.cost,
+        ...PLANS.map(p => marginPct(cur(d), d.cost, p.rate).toFixed(0) + '%')].join(',')).join('\n')
+    : 'No prices changed yet.';
+  const o = document.getElementById('out');
+  o.value = txt; o.style.display = 'block'; o.focus(); o.select();
+  try { navigator.clipboard.writeText(txt); } catch (e) {}
+});
+
+render();
+</script>
+</body>
+</html>
